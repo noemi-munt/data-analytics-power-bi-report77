@@ -1,4 +1,100 @@
 # Data Analytics - Power BI Report
 
-## Gathering the Data
-The Customers, Orders, Products, and Stores tables were imported from various sources including Azure Blob Storage and Azure SQL Database. The tables were cleaned by removing null/ empty records, deleting unnnecesary columns, and ensuring consistant naming conventions.
+## 1. Gather the Data
+The Customers, Orders, Products, and Stores tables were imported from various sources including Azure Blob Storage and Azure SQL Database. The tables were cleaned by removing null/ empty records, deleting unnnecesary columns, and ensuring consistent naming conventions.
+
+## 2. Create the Date Table
+Created the date table using the following DAX expression 
+``` DAX 
+Date Table =
+CALENDAR(
+    MIN(Orders[Order Date]),
+    MAX(Orders[Order Date])
+)
+```
+This creates the date table from the first to the most recent order.
+
+## 3. Build the Star Schema Data Model
+![image](https://github.com/user-attachments/assets/07b7c31c-15ce-4706-b2d0-86506afda870)
+
+Summary of relationships:
+- Products[product_code] to Orders[product_code]
+- Stores[store code] to Orders[Store Code]
+- Customers[User UUID] to Orders[User ID]
+- Date[date] to Orders[Order Date]
+- Date[date] to Orders[Shipping Date]
+
+## 4. Create Key Measures
+Total Orders 
+``` DAX
+Total Orders = COUNTROWS(Orders)
+```
+
+Total Revenue
+``` DAX
+Total Revenue = SUMX(
+    Orders,
+    Orders[Product Quantity] * RELATED(Products[Sale Price])
+)
+```
+Total Profit 
+``` DAX
+Total Profit = SUMX(
+    Orders,
+    Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))
+    )
+
+```
+Total Customers
+``` DAX
+Total Customers = COUNTA(Customers[User UUID])
+```
+
+Total Quantity: counts the number of items sold in the Orders table
+``` DAX
+Total Quantity = SUM(Orders[Product Quantity])
+```
+
+Profit YTD: calculates the total profit for the current year
+``` DAX
+Profit YTD = TOTALYTD (
+    SUMX (Orders,
+    Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))),
+    Orders[Order Date] 
+)
+```
+Revenue YTD: calculates the total revenue for the current year
+``` DAX
+Revenue YTD = TOTALYTD(
+    SUMX(
+    Orders,
+    Orders[Product Quantity] * RELATED(Products[Sale Price])
+    ),
+    Orders[Order Date]
+)
+```
+## 5. Create Date & Geography Hierarchies
+I created hierarchies to help filter and visualise data later on. To create a geography hierarchy, two new calculated columns in the Stores table called Country and Geography were added.
+
+The Country column was calculated by using the country code. 
+``` DAX 
+Country = 
+IF( 
+    Stores[Country Code] = "GB", 
+    "Great Britain",
+    IF(
+        Stores[Country Code] = "DE", 
+        "Germany",
+        "United States"
+    )
+)
+```
+The Geography was created by concatenating the country name and region.
+
+``` DAX
+Geography = CONCATENATE(
+    Stores[Country Region], 
+    CONCATENATE(", ", Stores[Country])
+)
+```
+   
