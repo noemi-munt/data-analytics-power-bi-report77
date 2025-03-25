@@ -15,6 +15,7 @@ CALENDAR(
 This creates the date table from the first to the most recent order.
 
 ## 3. Build the Star Schema Data Model
+
 ![image](https://github.com/user-attachments/assets/07b7c31c-15ce-4706-b2d0-86506afda870)
 
 Summary of relationships:
@@ -190,7 +191,38 @@ Notes:
 - Ensure the bookmark Slicer Bar Closed has the data unchecked. This ensures the bookmark does not override slicer selections when you close it.
 
 ![image](https://github.com/user-attachments/assets/43bfb0a3-99e3-4971-98d1-61f829a15145)
+
 ![image](https://github.com/user-attachments/assets/6dd07f56-ff7f-48cf-bebd-181b23cc5523)
+
+## 9. Create a Stores Map Page
+The Stores Map page includes 
+- A map visual
+- A ` Stores[Country]` slicer
+
+Set the controls of your map as follows:
+- Auto-Zoom: On
+- Zoom buttons: Off
+- Lasso button: Off
+
+Assign the Geography hierarchy to the Location field, and ProfitYTD to the Bubble size field
+Set the slicer field to `Stores[Country]`, and allow Multi-select with Ctrl/Cmd and Show "Select All" as an option in the slicer.
+
+![image](https://github.com/user-attachments/assets/36999040-073f-49ef-a4c1-99e22ae4794e)
+
+### 9.1 Create a Stores Drillthrough page
+This page includes the following visuals:
+
+- A table showing the top 5 products based on Total Orders, with columns: Description, Profit YTD, Total Orders, Total Revenue
+- A column chart showing Total Orders by product category for the store
+- Gauges for Profit YTD against a profit target of 20% year-on-year growth vs. the same period in the previous year. 
+- A Card visual showing the currently selected store
+  
+![image](https://github.com/user-attachments/assets/1046e0d8-d0a8-4a1c-8652-484b79b313c7)
+
+### 9.2 Create a Stores Tooltip page
+Create a custom tooltip to see each store's year-to-date profit performance against the profit target by hovering the mouse over a store on the map. To do this, create a Stores Tooltip page, and copy over the profit gauge visual, then set the tooltip of the map visual to the Stores Tooltip page.
+
+![image](https://github.com/user-attachments/assets/61ecd8ee-bb8a-4fc9-b0ab-4c2d49c5350a)
 
 
 
