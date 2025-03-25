@@ -144,3 +144,53 @@ The same process was used to calculate the KPIs for Quarterly Revenue and Profit
 
 ![image](https://github.com/user-attachments/assets/fd470b46-8433-4024-bcf6-22e588edc6e7)
 
+## 8. Create a Product Detail Page
+
+The Product Detail Page includes:
+- 3 gauge visuals
+- Table of the top 10 products
+- Line graph of total revenue by product category over time
+- Scatter graph of profit per item vs quantity of item sold by product category
+- Slicer toolbar
+
+### 8.1 Creating the gauge visuals
+The gauges show the current-quarter performance of Orders, Revenue and Profit against a quarterly target. The targets are a 10% quarter-on-quarter growth in all three metrics.
+
+The target DAX measures are defined as:
+``` DAX
+10% Target Orders = 1.1 * [Previous Quarter Orders]
+```
+This defines the maximum value of the gauge.
+The current number of orders this quarter is calculated similarly to the Previous Quarter Orders, except the offset in the `DATEADD` is 0.
+``` DAX
+Current Quarter Orders = 
+CALCULATE([Total Orders], DATEADD('Date Table'[Date], 0, QUARTER))
+```
+To apply conditional formatting to the callout values, we calculate the difference between the target and current value of the metric. The default colour is red, when the difference is zero the callout value is black.
+
+### 8.2 Create a Slicer Toolbar
+To reduce the visual clutter of the visuals we need to use slicers. To create a clean page, we have created a slicer toolbar to hide the slicers. Using buttons and bookmarks to hide different views, you can easily filter the data as shown in the screenshots below. The filter states are shown in the cards on the top left corner. 
+
+The DAX measures displaying the slicer filter state are defined as follows:
+``` DAX
+Category Selection = 
+IF(
+    ISFILTERED(Products[Category]), 
+    IF(
+        HASONEVALUE(Products[Category]), 
+        SELECTEDVALUE(Products[Category]), 
+        "Various Selected"
+    ), 
+    "No Selection"
+)
+```
+The same is used to display the `Stores[Country]` selection.
+
+Notes:
+- Ensure the bookmark Slicer Bar Closed has the data unchecked. This ensures the bookmark does not override slicer selections when you close it.
+
+![image](https://github.com/user-attachments/assets/43bfb0a3-99e3-4971-98d1-61f829a15145)
+![image](https://github.com/user-attachments/assets/6dd07f56-ff7f-48cf-bebd-181b23cc5523)
+
+
+
