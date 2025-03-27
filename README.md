@@ -1,228 +1,281 @@
-# Data Analytics - Power BI Report
+# Quarterly Review - Power BI Report
 
-## 1. Gather the Data
-The Customers, Orders, Products, and Stores tables were imported from various sources including Azure Blob Storage and Azure SQL Database. The tables were cleaned by removing null/ empty records, deleting unnnecesary columns, and ensuring consistent naming conventions.
+## 📌 Overview
+**Description:** This comprehensive Quarterly report presents a high-level business summary tailored for C-suite executives, and also give insights into their highest value customers segmented by sales region, provide a detailed analysis of top-performing products categorised by type against their sales targets, and a visually appealing map visual that spotlights the performance metrics of their retail outlets across different territories.
 
-## 2. Create the Date Table
-Created the date table using the following DAX expression 
-``` DAX 
+**Target Audience:**  
+- C-suite executives
+- Regional Managers
+- Product team
+
+---
+
+## 📊 Data Sources & Model
+**Imported Tables:**  
+- `Orders` is imported from an Azure SQL Database
+- `Stores` is imported from an Azure Blob Storage
+- `Products` and `Customers` are imported from local csv files
+
+**Data Transformation:** 
+  - Remove sensitive client information such as card numbers from the `Orders` table
+  - Create a `Full Name` column in the `Customers` table by combining `[First Name]` and `[Last Name]` 
+  - Ensure all regions are correctly and consistently spelled in `Stores[Region]`
+  - Removed null/empty/duplicate records  
+  - Deleted unnecessary columns  
+  - Ensured consistent naming conventions  
+
+**Data Model:**  
+- Built a **star schema** to optimise query performance and maintainability.  
+- Summary of relationships:  
+  - `Products[product_code]` → `Orders[product_code]`  
+  - `Stores[store_code]` → `Orders[Store Code]`  
+  - `Customers[User UUID]` → `Orders[User ID]`  
+  - `Date[date]` → `Orders[Order Date]`  
+  - `Date[date]` → `Orders[Shipping Date]`  
+
+![Data Model](https://github.com/user-attachments/assets/2b2b02df-4b0c-42bd-b963-c2ff66e3cb38)
+
+
+---
+
+## 📅 Creating the Date Table  
+To generate a date table, the following DAX expression was used:  
+```DAX
 Date Table =
 CALENDAR(
     MIN(Orders[Order Date]),
     MAX(Orders[Order Date])
 )
 ```
-This creates the date table from the first to the most recent order.
+This generates a column of dates from the first to most recent order date. The following DAX expressions were used to created the calculated columns.
 
-## 3. Build the Star Schema Data Model
-
-![image](https://github.com/user-attachments/assets/07b7c31c-15ce-4706-b2d0-86506afda870)
-
-Summary of relationships:
-- Products[product_code] to Orders[product_code]
-- Stores[store code] to Orders[Store Code]
-- Customers[User UUID] to Orders[User ID]
-- Date[date] to Orders[Order Date]
-- Date[date] to Orders[Shipping Date]
-
-## 4. Create Key Measures
-Total Orders 
-``` DAX
-Total Orders = COUNTROWS(Orders)
+```DAX
+Day of Week = FORMAT('Date Table'[Date], "dddd")
 ```
 
-Total Revenue
-``` DAX
-Total Revenue = SUMX(
-    Orders,
-    Orders[Product Quantity] * RELATED(Products[Sale Price])
-)
-```
-Total Profit 
-``` DAX
-Total Profit = SUMX(
-    Orders,
-    Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))
-    )
-
-```
-Total Customers
-``` DAX
-Total Customers = COUNTA(Customers[User UUID])
+```DAX
+Month Number = MONTH('Date Table'[Date])
 ```
 
-Total Quantity: counts the number of items sold in the Orders table
-``` DAX
-Total Quantity = SUM(Orders[Product Quantity])
+```DAX
+Month Name = FORMAT('Date Table'[Date], "mmmm")
 ```
 
-Profit YTD: calculates the total profit for the current year
-``` DAX
-Profit YTD = TOTALYTD (
+```DAX
+Quarter = "Q" & ROUNDUP(MONTH('Date Table'[Date]) / 3, 0)
+```
+
+```DAX
+Year = YEAR('Date Table'[Date])
+```
+
+```DAX
+Start of Year = STARTOFYEAR('Date Table'[Date])
+```
+
+```DAX
+Start of Quarter = STARTOFQUARTER('Date Table'[Date])
+```
+
+```DAX
+Start of Month = STARTOFMONTH('Date Table'[Date])
+```
+
+```DAX
+Start of Week = 'Date Table'[Date] - WEEKDAY('Date Table'[Date], 2) + 1
+```
+
+Mark the table as the Date Table and ensure the active relationship between the Order table and Date table is between `Date Table[Date]` and `Orders[Order Date]`. This allows for date-based aggregations and time intelligence calculations.
+
+---
+
+## 📈 Key Measures & Calculations  
+### Core KPIs  
+- **Total Orders** 
+  ```DAX
+  Total Orders = COUNTROWS(Orders)
+  ```
+- **Total Revenue**  
+  ```DAX
+  Total Revenue = SUMX(
+      Orders,
+      Orders[Product Quantity] * RELATED(Products[Sale Price])
+  )
+  ```
+- **Total Profit**  
+  ```DAX
+  Total Profit = SUMX(
+      Orders,
+      Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))
+  )
+  ```
+- **Total Customers**  
+  ```DAX
+  Total Customers = COUNTA(Customers[User UUID])
+  ```
+- **Total Quantity**
+  ``` DAX
+  Total Quantity = SUM(Orders[Product Quantity])
+  ```
+
+- **Profit YTD**: Calculates the total profit earned from the beginning of the current year
+  ``` DAX
+  Profit YTD = TOTALYTD (
     SUMX (Orders,
-    Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))),
-    Orders[Order Date] 
-)
-```
-Revenue YTD: calculates the total revenue for the current year
-``` DAX
-Revenue YTD = TOTALYTD(
-    SUMX(
-    Orders,
-    Orders[Product Quantity] * RELATED(Products[Sale Price])
-    ),
-    Orders[Order Date]
-)
-```
+      Orders[Product Quantity] * (RELATED(Products[Sale Price]) - RELATED(Products[Cost Price]))),
+      Orders[Order Date] 
+  )
+  ```
+- **Revenue YTD**: Calculates the total revenue earned from the beginning of the current year
+  ``` DAX
+  Revenue YTD = TOTALYTD(
+      SUMX(
+      Orders,
+      Orders[Product Quantity] * RELATED(Products[Sale Price])
+      ),
+      Orders[Order Date]
+  )
+  ```
 
-## 5. Create Date & Geography Hierarchies
-I created hierarchies to help filter and visualise data later on. To create a geography hierarchy, two new calculated columns in the Stores table called Country and Geography were added.
+### 🌍 Creating Date & Geography Hierarchies  
+To improve filtering and visualisation, hierarchies were created:  
+- **Date hierarchy**  
+  - `Start of Year` → `Start of Quarter` → `Start of Month` → `Start of Week` → `Date`
+- **Geography hierarchy**  
+  - `Region` → `Country` → `Country Region`
 
-The Country column was calculated by using the country code. 
-``` DAX 
+To calculate the `Country` column the `Country Code` column was converted to the country's full name.
+#### DAX for Country Column  
+```DAX
 Country = 
 IF( 
-    Stores[Country Code] = "GB", 
-    "Great Britain",
-    IF(
-        Stores[Country Code] = "DE", 
-        "Germany",
-        "United States"
-    )
+    Stores[Country Code] = "GB", "Great Britain",
+    IF(Stores[Country Code] = "DE", "Germany", "United States")
 )
 ```
-The Geography was created by concatenating the country name and region.
-
-``` DAX
+To calculate the `Geography` column the store's region was concatenated to the store's country. 
+#### DAX for Geography Column  
+```DAX
 Geography = CONCATENATE(
     Stores[Country Region], 
     CONCATENATE(", ", Stores[Country])
 )
 ```
 
-## 6. Create the Customer Summary Page
-The customer summary page includes the following visualisations
+---
 
-- A donut chart of the total customers of each country
-- A donut chart of the number of customers who purchased each product category
-- A line chart of the total customers over time
-- A table of the top 20 customers by revenue
-- A set of three cards of the top customer by revenue, including their name, total number of orders placed, and the total revenue generated by the customer.
+## 🗂️ Report Structure & Key Features
+### 📊 Executive Summary Page  
+This page aims to give an overview of the company's performance as a whole and visualises outcomes against key targets.
 
-![image](https://github.com/user-attachments/assets/3e1b7748-3b3a-445c-b792-c78037362a3f)
-
-## 7. Create an Executive Summary Page
-The Executive Summary page includes the following visuals: 
-- Cards to display the Total Revenue, Total Orders and Total Profit measures
-- A line chart of the revenue over time, setup in the same way as the line chart from the Customer Detail page.
-- Donut charts of the Total Revenue by Country and Total Revenue by Store Type
-- A bar chart of the Total Orders by the Product Category
-- 3 KPIs of the  Quarterly Revenue, Orders and Profit.
-
-### Create KPI visuals
-
-To create KPIs for Quarterly Revenue, Orders and Profit I created a set of new measures for the quarterly targets.
-- Previous Quarter Profit
-- Previous Quarter Revenue
-- Previous Quarter Orders
-- Targets, equal to 5% growth in each measure compared to the previous quarter
-
-To calculate the previous quarter, I used the `DATEADD` function as I encountered filtering issues with `PREVIOUSQUARTER` function.
-``` DAX 
-Previous Quarter Orders =
-CALCULATE([Total Orders], DATEADD('Date Table'[Date], -1, QUARTER))
-```
-The create the target measures, I used the following DAX expression.
-``` DAX
-Target Orders = [Previous Quarter Orders] * 1.05
-```
-To set up a new KPI for the orders:
-
-- The Value field should be Total Orders
-- The Trend Axis should be Start of Quarter
-- The Target should be Target Orders
-The same process was used to calculate the KPIs for Quarterly Revenue and Profit.
-
-![image](https://github.com/user-attachments/assets/fd470b46-8433-4024-bcf6-22e588edc6e7)
-
-## 8. Create a Product Detail Page
-
-The Product Detail Page includes:
-- 3 gauge visuals
-- Table of the top 10 products
-- Line graph of total revenue by product category over time
-- Scatter graph of profit per item vs quantity of item sold by product category
-- Slicer toolbar
-
-### 8.1 Creating the gauge visuals
-The gauges show the current-quarter performance of Orders, Revenue and Profit against a quarterly target. The targets are a 10% quarter-on-quarter growth in all three metrics.
-
-The target DAX measures are defined as:
-``` DAX
-10% Target Orders = 1.1 * [Previous Quarter Orders]
-```
-This defines the maximum value of the gauge.
-The current number of orders this quarter is calculated similarly to the Previous Quarter Orders, except the offset in the `DATEADD` is 0.
-``` DAX
-Current Quarter Orders = 
-CALCULATE([Total Orders], DATEADD('Date Table'[Date], 0, QUARTER))
-```
-To apply conditional formatting to the callout values, we calculate the difference between the target and current value of the metric. The default colour is red, when the difference is zero the callout value is black.
-
-### 8.2 Create a Slicer Toolbar
-To reduce the visual clutter of the visuals we need to use slicers. To create a clean page, we have created a slicer toolbar to hide the slicers. Using buttons and bookmarks to hide different views, you can easily filter the data as shown in the screenshots below. The filter states are shown in the cards on the top left corner. 
-
-The DAX measures displaying the slicer filter state are defined as follows:
-``` DAX
-Category Selection = 
-IF(
-    ISFILTERED(Products[Category]), 
-    IF(
-        HASONEVALUE(Products[Category]), 
-        SELECTEDVALUE(Products[Category]), 
-        "Various Selected"
-    ), 
-    "No Selection"
-)
-```
-The same is used to display the `Stores[Country]` selection.
-
-Notes:
-- Ensure the bookmark Slicer Bar Closed has the data unchecked. This ensures the bookmark does not override slicer selections when you close it.
-
-![image](https://github.com/user-attachments/assets/43bfb0a3-99e3-4971-98d1-61f829a15145)
-
-![image](https://github.com/user-attachments/assets/6dd07f56-ff7f-48cf-bebd-181b23cc5523)
-
-## 9. Create a Stores Map Page
-The Stores Map page includes 
-- A map visual
-- A ` Stores[Country]` slicer
-
-Set the controls of your map as follows:
-- Auto-Zoom: On
-- Zoom buttons: Off
-- Lasso button: Off
-
-Assign the Geography hierarchy to the Location field, and ProfitYTD to the Bubble size field
-Set the slicer field to `Stores[Country]`, and allow Multi-select with Ctrl/Cmd and Show "Select All" as an option in the slicer.
-
-![image](https://github.com/user-attachments/assets/36999040-073f-49ef-a4c1-99e22ae4794e)
-
-### 9.1 Create a Stores Drillthrough page
-This page includes the following visuals:
-
-- A table showing the top 5 products based on Total Orders, with columns: Description, Profit YTD, Total Orders, Total Revenue
-- A column chart showing Total Orders by product category for the store
-- Gauges for Profit YTD against a profit target of 20% year-on-year growth vs. the same period in the previous year. 
-- A Card visual showing the currently selected store
-  
-![image](https://github.com/user-attachments/assets/1046e0d8-d0a8-4a1c-8652-484b79b313c7)
-
-### 9.2 Create a Stores Tooltip page
-Create a custom tooltip to see each store's year-to-date profit performance against the profit target by hovering the mouse over a store on the map. To do this, create a Stores Tooltip page, and copy over the profit gauge visual, then set the tooltip of the map visual to the Stores Tooltip page.
-
-![image](https://github.com/user-attachments/assets/61ecd8ee-bb8a-4fc9-b0ab-4c2d49c5350a)
+**Key Visuals:** 
+- **KPIs**: Quarterly revenue, orders, and profit compared to a target of 5% growth across each measure. Red indicates a target is not met.
+- **Cards**: Total revenue, orders, and profit  
+- **Line Chart**: Revenue over time  
+- **Donut Charts**: Revenue by country and store type  
+- **Bar Chart**: Orders by product category  
+- **Table**: Top 10 Products
 
 
+![Executive Summary](https://github.com/user-attachments/assets/c0fd9bd4-94ba-439a-a5f7-8f87c0e7d44f)
+
+
+---
+
+### 🛍️ Customer Detail Page  
+This page aims to provide a comprehensive analysis of the customer base and allows filtering by country and product categories.
+
+**Key Visuals:** 
+- **Donut charts**: Customer distribution by country and product category  
+- **Line chart**: Customer growth over time  
+- **Table**: Top 20 customers by revenue  
+- **Cards**: Top customer by revenue, number of unique customers, revenue per customer 
+
+![Customer Summary](https://github.com/user-attachments/assets/692f888a-d586-4019-810f-513eefe156b3)
+
+
+---
+
+### 📦 Product Detail Page  
+This page aims to give the Product Team an overview of total revenue, top products, and profitability across different product categories.
+
+**Key Visuals:**  
+- **Gauge Visuals**: Quarterly targets of 10% quarter-on-quarter growth in all three key metrics. 
+- **Table**: Top 10 Products 
+- **Line Graph**: Revenue by product category over time  
+- **Scatter Graph**: Profit per item vs quantity sold  
+![Product Detail](https://github.com/user-attachments/assets/80f2b741-1fa7-4319-b2e0-e72692af5b2d)
+#### Slicer Toolbar
+
+Slicers allow users to filter report pages, but multiple slicers can clutter the layout. To resolve this, a pop-out toolbar is created using Power BI's bookmarks feature. This toolbar can be accessed via a navigation bar button and hidden when not in use.
+
+To implement the toolbar: 
+1. Create a slicer panel
+1. Add a filter button which opens the slicer panel
+1. Add two slicers in "Vertical List" style
+    1. `Products[Category]` (with "multi-select" enabled)
+    1. `Stores[Country]` (with "Select All" enabled)
+1. Group the slicers, toolbar shape, and back button
+1. Open the Bookmarks pane and create:
+    1. Slicer Bar Closed (with toolbar hidden)
+    1. Slicer Bar Open (with toolbar visible)
+1. Uncheck "Data" to prevent bookmarks from affecting slicer selections.
+1. In the Format pane, enable Action for:
+    1. The "Filter button" (assign to "Slicer Bar Open" bookmark)
+    1. The "Back button" (assign to "Slicer Bar Closed" bookmark)
+
+![Product Detail Toolbar](https://github.com/user-attachments/assets/514ca724-7397-4e3c-8458-d914f2911f23)
+
+---
+
+### 🏬 Stores Map Page
+This page allows Regional Managers to compare individual stores agaisnt their profit targets and to drillthrough to key metrics of each store.
+
+**Key Visuals:**  
+- **Map**: Showing the `ProfitYTD` with the ability to move through the Geography hierarchy from region all the way down to individual stores
+- **Country Slicer**: Allows the user to select multiple regions 
+- **Gauge Tooltip**: Hovering over a store shows a `Prfit YTD` gauge against the `Profit Goal` target
+![Stores Map](https://github.com/user-attachments/assets/d75cc2c2-ad86-4cc6-862b-9a900ed59e9d)
+
+#### Drillthrough Page Setup
+The drillthrough page gives a quick summary of a stores performance in key Quarterly targets and top selling products.
+
+**Key Visuals:**
+- **Table**: Top 5 products based on `Total Orders`
+- **Column Chart**: `Total Orders` by product category 
+- **Gauges**: `Profit YTD` and `Revenue YTD` against a target of 20% year-on-year growth vs. the same period in the previous year. 
+- **Card**: Showing the currently selected store
+
+![Stores Drillthrough](https://github.com/user-attachments/assets/482df94c-bee9-4965-a9e5-8d78bf729cb4)
+
+
+#### Tooltip Setup
+Create a custom tooltip page, and copy the profit gauge visual from the drillthrough page, then set the tooltip of the map visual to the tooltip page.
+
+![Stores Map Tooltip](https://github.com/user-attachments/assets/b9ef0cb7-1b04-45fb-8e27-7b7d2f19de8a)
+
+---
+
+## 🖱️ Cross Filtering & Navigation Settings  
+Removing unintentional cross filtering is important for maintaining useful visualisations. 
+To remove unwanted interactions between visuals click on the visual you would like to remove cross filtering and go to the Edit Interactions view in the Format tab ribbon.
+![Edit Interactions](https://github.com/user-attachments/assets/204b9738-4b56-4cfe-a4c2-7c8512d6ab05)
+
+The following interactions were set for each page:
+
+### Executive Summary Page  
+- **Product Category bar chart** and **Top 10 Products table** → should not filter KPIs  
+
+### Customer Detail Page  
+- **Top 20 Customers table** → should not filter any visuals  
+- **Total Customers by Product Category** → should not filter the customers line graph  
+- **Total Customers by Country** → should cross-filter **Total Customers by Product Category**
+
+### Product Detail Page  
+- **Quantity Sold vs. Profit per Item** → should not filter other visuals  
+- **Top 10 Products table** → should not filter other visuals  
+
+---
+
+_Last updated: 27/03/2025_
 
