@@ -276,6 +276,34 @@ The following interactions were set for each page:
 - **Top 10 Products table** → should not filter other visuals  
 
 ---
+## 🛢️ Key Metrics Extraction using SQL  
 
-_Last updated: 27/03/2025_
+To share key insights with clients who do not use Power BI, SQL queries were used to extract relevant data directly from the database. The database is hosted on a **PostgreSQL server** on **Microsoft Azure**. Queries were executed using **VS Code** with the **SQLTools extension**.  
+
+### Questions Answered  
+
+The following key business questions were addressed:  
+
+1. **Total Staff Count (UK)** – How many staff are employed across all UK stores?  
+2. **Highest Revenue Month (2022)** – Which month had the highest revenue in 2022?  
+3. **Top-Performing Store Type (Germany, 2022)** – Which German store type generated the highest revenue in 2022?  
+4. **Sales Summary by Store Type** – Create a summary table where:  
+   - Rows represent different store types  
+   - Columns include total sales, percentage of total sales, and order count  
+5. **Most Profitable Product Category (Wiltshire, UK, 2021)** – Which product category generated the highest profit in this region and year?  
+
+### SQL Query & Output Files  
+
+The SQL scripts and corresponding CSV outputs are stored in the project directory under the following filenames:  
+
+| Question | SQL File | CSV Output |  
+|----------|---------|------------|  
+| Total Staff Count (UK) | `question_1.sql` | `question_1.csv` |  
+| Highest Revenue Month (2022) | `question_2.sql` | `question_2.csv` |  
+| Top-Performing Store Type (Germany, 2022) | `question_3.sql` | `question_3.csv` |  
+| Sales Summary by Store Type | `question_4.sql` | `question_4.csv` |  
+| Most Profitable Product Category (Wiltshire, UK, 2021) | `question_5.sql` | `question_5.csv` |  
+
+
+_Last updated: 28/03/2025_
 
